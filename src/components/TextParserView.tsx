@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   FileText,
   Send,
@@ -7,16 +7,99 @@ import {
   AlertCircle,
   Wind,
   Flame,
-  Clock,
   ArrowRight,
+  Mic,
+  Square,
 } from 'lucide-react';
 import { useKitchen } from '../context/KitchenContext';
 import { parseOrderText } from '../utils/kitchenRules';
+
+type SpeechRecognitionResultEvent = {
+  resultIndex: number;
+  results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
+};
+
+type SpeechRecognitionLike = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+type SpeechRecognitionWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
 
 export const TextParserView: React.FC<{ onDispatched: () => void }> = ({ onDispatched }) => {
   const { menu, placeOrder, addToCart } = useKitchen();
   const [inputText, setInputText] = useState('2 veg momo 1 chicken hakka noodles fast');
   const [toast, setToast] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  const toggleDictation = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const speechWindow = window as SpeechRecognitionWindow;
+    const SpeechRecognition = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechError('Voice input is not supported in this browser. Try the latest Chrome or Edge.');
+      return;
+    }
+
+    setSpeechError(null);
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-IN';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = Array.from({ length: event.results.length - event.resultIndex }, (_, index) => {
+        const result = event.results[event.resultIndex + index];
+        return result.isFinal ? result[0].transcript.trim() : '';
+      }).filter(Boolean).join(' ');
+
+      if (transcript) {
+        setInputText((current) => `${current.trim()} ${transcript}`.trim());
+      }
+    };
+    recognition.onerror = (event) => {
+      const message = event.error === 'not-allowed' || event.error === 'service-not-allowed'
+        ? 'Microphone access was blocked. Allow microphone access in your browser and try again.'
+        : event.error === 'no-speech'
+          ? 'No speech was detected. Try speaking again.'
+          : `Voice input stopped (${event.error}). Please try again.`;
+      setSpeechError(message);
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    try {
+      recognitionRef.current = recognition;
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      recognitionRef.current = null;
+      setIsListening(false);
+      setSpeechError('Could not start voice input. Check microphone permissions and try again.');
+    }
+  };
 
   const parsed = useMemo(() => {
     return parseOrderText(inputText, menu);
@@ -96,6 +179,32 @@ export const TextParserView: React.FC<{ onDispatched: () => void }> = ({ onDispa
             placeholder="e.g. 2 veg momo 1 chicken hakka noodles fast"
             className="w-full text-sm font-medium p-4 bg-[#fbf9f5] border border-[#e8e4db] rounded-2xl outline-none focus:border-[#201f1c] transition resize-none text-[#201f1c]"
           />
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleDictation}
+              aria-pressed={isListening}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+                isListening
+                  ? 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                  : 'bg-[#201f1c] text-white hover:bg-[#383631]'
+              }`}
+            >
+              {isListening ? <Square className="w-3.5 h-3.5 fill-current" /> : <Mic className="w-4 h-4" />}
+              <span>{isListening ? 'Stop voice input' : 'Speak an order'}</span>
+            </button>
+            <span className="text-[11px] text-[#79766e]">
+              {isListening ? 'Listening… speak clearly, then stop when finished.' : 'Dictated words appear here for review.'}
+            </span>
+          </div>
+
+          {speechError && (
+            <div role="status" className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{speechError}</span>
+            </div>
+          )}
 
           <div>
             <span className="text-[11px] font-bold text-[#79766e] uppercase tracking-wider block mb-2">

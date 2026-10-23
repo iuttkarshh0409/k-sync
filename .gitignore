@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+k-sync.zip
+
+k-sync.zip
