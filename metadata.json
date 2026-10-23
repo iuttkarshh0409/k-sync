@@ -1,0 +1,6 @@
+{
+  "name": "KitchenSync - Dual-Brand Kitchen Coordination",
+  "description": "Kitchen orchestration platform for Momobuzz and Woksum with synchronized station scheduling, cross-order batching, dual-brand ordering, and profitability economics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

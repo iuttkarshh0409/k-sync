@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Athelas';
+  src: url('/fonts/Athelas-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  /* Exclude U+20B9 (₹) so the Indian Rupee symbol cleanly falls back to Plus Jakarta Sans */
+  unicode-range: U+0020-007E, U+00A0-00FF, U+0100-017F, U+2010-2027;
+}
+
+@theme {
+  --font-serif: 'Athelas', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --color-momo-primary: #d96d4c;
+  --color-momo-dark: #b85032;
+  --color-momo-light: #fbefe9;
+  --color-momo-surface: #fff8f5;
+
+  --color-wok-primary: #527d58;
+  --color-wok-dark: #375b3c;
+  --color-wok-light: #edf4eb;
+  --color-wok-surface: #f6faf5;
+
+  --color-app-bg: #fbf9f5;
+  --color-card-bg: #ffffff;
+  --color-sidebar-bg: #f4f1ea;
+  --color-border-subtle: #ece8df;
+  --color-text-main: #201f1c;
+  --color-text-muted: #79766e;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: #fbf9f5;
+  color: #201f1c;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-athelas {
+  font-family: 'Athelas', Georgia, serif;
+}
+
+/* Custom scrollbars for kitchen and tasks */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d8d3c7;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #beb8aa;
+}
